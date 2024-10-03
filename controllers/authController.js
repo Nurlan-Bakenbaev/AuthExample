@@ -215,3 +215,29 @@ export const verifyVerificationCode = async (req, res) => {
     console.log(error);
   }
 };
+export const changePassword = async (req, res) => {
+  const { email, verified } = req.user;
+  const { oldPassword, newPassword } = req.body;
+
+  try {
+    const { error, value } = await changePasswordValidation.validate({
+      oldPassword,
+      newPassword,
+    });
+    if (error) return res.status(404).json({ message: error.message });
+    const existingUser = await User.findOne({ _id: userId }).select(
+      "+password"
+    );
+    if (!existingUser)
+      return res.status(404).json({ message: "User not found" });
+    const result = await doHashValidate(oldPassword, existingUser.password);
+    if (!result) {
+      return res.status(401).json({ message: "Invalid old credentials" });
+    }
+    const hashedPassword = await doHash(newPassword, 12);
+    existingUser.password = hashedPassword;
+    await existingUser.save();
+  } catch (error) {
+    console.log(error);
+  }
+};

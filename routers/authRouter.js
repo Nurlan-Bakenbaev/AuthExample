@@ -5,17 +5,19 @@ import {
   signOut,
   sendverificationCode,
   verifyVerificationCode,
+  changePassword,
 } from "../controllers/authController.js";
-import { idientifier } from "../middlewares/identification.js";
+import { identifier } from "../middlewares/identification.js";
 
 export const authRouter = express.Router();
 
 authRouter.post("/signup", signUp);
 authRouter.post("/signin", signIn);
-authRouter.post("/signout", idientifier, signOut);
-authRouter.patch("/sent-verification-code", idientifier, sendverificationCode);
+authRouter.post("/signout", identifier, signOut);
+authRouter.patch("/sent-verification-code", identifier, sendverificationCode);
 authRouter.patch(
   "/verify-verification-code",
-  idientifier,
+  identifier,
   verifyVerificationCode
 );
+authRouter.patch("/change-password", identifier, changePassword);
