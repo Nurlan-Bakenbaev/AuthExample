@@ -35,5 +35,5 @@ export const acceptedCodeValidation = Joi.object({
     .email({
       tlds: { allow: ["com", "net", "ru", "kg"] },
     }),
-  providedCode: Joi.number(),
+  providedCode: Joi.number().required(),
 });

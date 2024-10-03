@@ -1,4 +1,5 @@
 import {
+  acceptedCodeValidation,
   signInValidation,
   signUpValidation,
 } from "../middlewares/validator.js";
@@ -164,8 +165,53 @@ export const sendverificationCode = async (req, res) => {
 export const verifyVerificationCode = async (req, res) => {
   const { email, providedCode } = req.body;
   try {
-    
+    const { error, value } = acceptedCodeValidation.validate({
+      email,
+      providedCode,
+    });
+    if (error) {
+      return res
+        .status(400)
+        .json({ success: false, message: error.details[0].message });
+    }
+    const codeValue = providedCode.toString();
+    const existingUser = await User.findOne({ email: email }).select(
+      "+verificationCode +verificationCodeValidation"
+    );
+    if (!existingUser) {
+      return res
+        .status(401)
+        .json({ success: false, message: "User not found" });
+    }
+    if (existingUser.verified) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User already verified" });
+    }
+    if (
+      !existingUser.verificationCode ||
+      !existingUser.verificationCodeValidation
+    ) {
+      return res.status(400).json({ success: false, message: "Error occured" });
+    }
+    if (Date.now() - existingUser.verificationCodeValidation > 5 * 60 * 10000) {
+      res.status(400).json({ success: false, message: "Code is Expired" });
+    }
+    const hashedProvidedCode = hmacProcess(
+      codeValue,
+      process.env.HMAC_VERIFICATION_CODE_SECRET
+    );
+    if (hashedProvidedCode === existingUser.verificationCode) {
+      existingUser.verified = true;
+      existingUser.verificationCode = undefined;
+      existingUser.verificationCodeValidation = undefined;
+      await existingUser.save();
+      return res
+        .status(200)
+        .json({ success: true, message: "Your Accound is verified" });
+    }
+    return res.status(404).json({ true: false, message: "Unexpected Occured" });
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
 };
